@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -16,19 +16,30 @@ def prepare_train_test():
     df.columns = [c.lower().replace(" ", "_") for c in df.columns]
     df.info()
 
-    # fig = px.histogram(df[df['recommended_ind']==1], x='rating')
-    # fig.update_layout(width=640)
-    # fig.show()
+    # # For recommended_ind == 1
+    # plt.figure(figsize=(8, 6))
+    # plt.hist(df[df['recommended_ind'] == 1]['rating'], bins=5, color='RoyalBlue', edgecolor='gray')
+    # plt.title('Histogram of Ratings (Recommended = 1)')
+    # plt.xlabel('Rating')
+    # plt.ylabel('Frequency')
+    # plt.show()
 
-    # fig = px.histogram(df[df['recommended_ind']==0], x='rating')
-    # fig.update_layout(width=640)
-    # fig.show()
+    # # For recommended_ind == 0
+    # plt.figure(figsize=(8, 6))
+    # plt.hist(df[df['recommended_ind'] == 0]['rating'], bins=5, color='FireBrick', edgecolor='gray')
+    # plt.title('Histogram of Ratings (Recommended = 0)')
+    # plt.xlabel('Rating')
+    # plt.ylabel('Frequency')
+    # plt.show()
 
     df.drop(["recommended_ind"], axis=1, inplace=True)
 
-    # fig = px.histogram(df, x='rating')
-    # fig.update_layout(width=640)
-    # fig.show()
+    # plt.figure(figsize=(8, 6))
+    # plt.hist(df['rating'], bins=5, color='RoyalBlue', edgecolor='gray')
+    # plt.title('Histogram of Ratings')
+    # plt.xlabel('Rating')
+    # plt.ylabel('Frequency')
+    # plt.show()
 
     df["is_positive"] = (df["rating"] > 3).astype(int)
     df.drop(["rating"], axis=1, inplace=True)
