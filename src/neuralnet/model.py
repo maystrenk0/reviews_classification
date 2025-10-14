@@ -30,7 +30,7 @@ class TabBERT(nn.Module):
         self.fc2 = nn.Linear(64, 32)
         self.fc3 = nn.Linear(32, 1)
 
-        self.relu = nn.ReLU()
+        self.elu = nn.ELU()
         self.sigmoid = nn.Sigmoid()
         # self.softmax = nn.Softmax(dim=1)
 
@@ -47,9 +47,9 @@ class TabBERT(nn.Module):
         x = torch.cat((bert_output, x_embed, x_cont), dim=1)
 
         # Pass through fully connected layers
-        x = self.relu(self.fc1(x))
+        x = self.elu(self.fc1(x))
         x = self.dropout(x)
-        x = self.relu(self.fc2(x))
+        x = self.elu(self.fc2(x))
         x = self.dropout(x)
         x = self.fc3(x)
 
