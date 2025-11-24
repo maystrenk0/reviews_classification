@@ -111,13 +111,6 @@ def prepare_train_test():
     df_train[categorical_features] = df_train[categorical_features] + 1
     df_test[categorical_features] = df_test[categorical_features] + 1
 
-    df_train[categorical_features + numeric_features] = df_train[
-        categorical_features + numeric_features
-    ].astype(int)
-    df_test[categorical_features + numeric_features] = df_test[
-        categorical_features + numeric_features
-    ].astype(int)
-
     print("df_train.shape:", df_train.shape)
     print("df_test.shape:", df_test.shape)
 
