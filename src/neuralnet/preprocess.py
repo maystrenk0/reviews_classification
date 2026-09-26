@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pickle
 
@@ -37,11 +38,7 @@ def tokenize_reviews(df, tokenizer, max_length):
     return df
 
 
-def prepare_data(transformer_model, max_length, device, seed):
-    # Set seeds for random modules
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-
+def load_data(transformer_model, max_length):
     df_train = pd.read_csv("data/train.csv")
     df_test = pd.read_csv("data/test.csv")
     with open("data/categorical_features.pkl", "rb") as f:
@@ -60,15 +57,10 @@ def prepare_data(transformer_model, max_length, device, seed):
     X_train = tokenize_reviews(X_train, tokenizer, max_length)
     X_val = tokenize_reviews(X_val, tokenizer, max_length)
 
-    X_train = torch.tensor(X_train.astype(float).values, dtype=torch.float32).to(device)
-    y_train = torch.tensor(y_train.astype(float).values, dtype=torch.float32).to(device)
-    X_val = torch.tensor(X_val.values, dtype=torch.float32).to(device)
-    y_val = torch.tensor(y_val.values, dtype=torch.float32).to(device)
-
-    # Create the dataset and dataloader
-    BATCH_SIZE = 1024
-    train_loader = DataLoader(TensorDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(TensorDataset(X_val, y_val), batch_size=BATCH_SIZE)
+    X_train = X_train.astype(float).values
+    y_train = y_train.astype(float).values
+    X_val = X_val.values
+    y_val = y_val.values
 
     # Determine the size of embeddings for categorical features
     embedding_sizes = [
@@ -92,4 +84,52 @@ def prepare_data(transformer_model, max_length, device, seed):
     columns_idx["NUMERIC_START"] = len(categorical_features)
     columns_idx["NUMERIC_END"] = len(categorical_features) + len(numeric_features)
 
+    return X_train, X_val, y_train, y_val, columns_idx, embedding_sizes, n_continuous
+
+
+def prepare_data(transformer_model, max_length, device, seed):
+    # Set seeds for random modules
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+
+    X_train, X_val, y_train, y_val, columns_idx, embedding_sizes, n_continuous = load_data(
+        transformer_model, max_length
+    )
+
+    X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
+    y_train = torch.tensor(y_train, dtype=torch.float32).to(device)
+    X_val = torch.tensor(X_val, dtype=torch.float32).to(device)
+    y_val = torch.tensor(y_val, dtype=torch.float32).to(device)
+
+    # Create the dataset and dataloader
+    BATCH_SIZE = 1024
+    train_loader = DataLoader(TensorDataset(X_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(TensorDataset(X_val, y_val), batch_size=BATCH_SIZE)
+
     return train_loader, val_loader, columns_idx, embedding_sizes, n_continuous
+
+
+def split_features(X, columns_idx):
+    # Split the feature matrix into the keyword arguments of TabBERT.forward
+    return {
+        "input_ids": X[:, columns_idx["INPUT_IDS_START"] : columns_idx["INPUT_IDS_END"]],
+        "attention_mask": X[
+            :, columns_idx["ATTENTION_MASK_START"] : columns_idx["ATTENTION_MASK_END"]
+        ],
+        "x_cat": X[:, columns_idx["CATEGORICAL_START"] : columns_idx["CATEGORICAL_END"]],
+        "x_cont": X[:, columns_idx["NUMERIC_START"] : columns_idx["NUMERIC_END"]],
+    }
+
+
+def prepare_data_skorch(transformer_model, max_length):
+    X_train, X_val, y_train, y_val, columns_idx, embedding_sizes, n_continuous = load_data(
+        transformer_model, max_length
+    )
+
+    # skorch accepts a dict of arrays as X and passes its keys to module.forward
+    X_train = split_features(X_train.astype(np.float32), columns_idx)
+    X_val = split_features(X_val.astype(np.float32), columns_idx)
+    y_train = y_train.astype(np.float32)
+    y_val = y_val.astype(np.float32)
+
+    return X_train, X_val, y_train, y_val, embedding_sizes, n_continuous

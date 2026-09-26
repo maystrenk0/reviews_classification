@@ -7,3 +7,4 @@ torch
 torchinfo
 pytorch-ignite
 transformers
+skorch
